@@ -52,7 +52,7 @@ import warnings
 # that its "automatic function calling" internals aren't the officially
 # recommended call pattern (langchain_google_genai's own internal
 # choice, not something students control), and `langchain_google_genai`
-# warns that `gemini-3.6-flash` ignores the `temperature` this project
+# warns that `gemini-3.6-flash` (the original default) ignores the `temperature` this project
 # always passes as 0, since that specific model line uses fixed
 # sampling and can't be adjusted. Left visible, both look exactly like
 # something broke; suppressed here, once, before either library is
@@ -64,7 +64,7 @@ warnings.filterwarnings("ignore", message=".*uses fixed sampling defaults.*", ca
 _ENV_VAR_BY_BACKEND = {"groq": "GROQ_API_KEY", "gemini": "GOOGLE_API_KEY"}
 _MODEL_BY_BACKEND = {
     "groq": "openai/gpt-oss-120b",
-    "gemini": "gemini-3.6-flash",
+    "gemini": "gemini-3.5-flash-lite",
 }
 _DEFAULT_REQUEST_TIMEOUT_SECONDS = 60
 _MAX_NUMBERED_KEYS = 10
@@ -201,7 +201,9 @@ def build_llm(backend: str, api_key: str, temperature: float = 0, timeout: float
             # llm_fallback.py), which react to the real rate-limit signal
             # rather than blindly backing off.
             max_retries=1,
-            # gemini-3.6-flash does internal "thinking" before answering,
+            # Changed from gemini-3.6-flash/"minimal" to gemini-3.5-flash-lite/"low":
+            # more stable and fewer wasted API calls in our own testing.
+            # Gemini does internal "thinking" before answering,
             # variable-length and not something our own code controls or
             # sees. langchain_google_genai's own docs recommend a low
             # thinking_level specifically "for faster, lower-latency
@@ -212,7 +214,7 @@ def build_llm(backend: str, api_key: str, temperature: float = 0, timeout: float
             # documented way to fully disable thinking the way Gemini 2.5's
             # thinking_budget=0 could), but it's the closest available and
             # meaningfully cut latency in testing.
-            thinking_level="minimal",
+            thinking_level="low",
         )
     else:
         raise ValueError(f"Unknown backend '{backend}'. Must be one of {list(_ENV_VAR_BY_BACKEND)}.")
